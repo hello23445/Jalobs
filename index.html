@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Жалобы</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-color: #060039;
+      --text-color: #d9d9d9;
+      --btn-color: #251897;
+      --card-color: #11023f;
+    }
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+    }
+    button {
+      background-color: var(--btn-color);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      margin: 10px 5px 0 0;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+    }
+    .drop-zone {
+      border: 2px dashed #888;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      margin-top: 10px;
+      background-color: var(--card-color);
+    }
+    .preview img {
+      max-width: 80px;
+      margin: 5px;
+      border-radius: 8px;
+    }
+    .image-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+    .image-wrapper button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: red;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 12px;
+      padding: 0;
+      line-height: 20px;
+    }
+    .status-card {
+      background: var(--card-color);
+      padding: 20px;
+      border-radius: 12px;
+      margin-top: 20px;
+    }
+    .hidden { display: none; }
+    h2, h3, h4 { margin-bottom: 10px; }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      padding: 12px;
+      margin-top: 10px;
+      background: var(--card-color);
+      border-radius: 8px;
+    }
+    .step-number {
+      background: var(--btn-color);
+      color: white;
+      font-weight: bold;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+    .step-content {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div id="main-menu">
+    <h2>Главное меню</h2>
+    <button onclick="showComplaintForm()">Отправить жалобу</button>
+    <button onclick="showComplaintStatus()">Статус жалобы</button>
+  </div>
+
+  <div id="complaint-form" class="hidden">
+    <h2>Форма жалобы</h2>
+    <input type="text" id="contact" placeholder="Контактные данные (необязательно)" />
+    <textarea id="complaint" placeholder="Опишите жалобу..." required></textarea>
+    <div class="drop-zone" id="drop-zone">
+      Перетащите сюда или выберите до 10 фото
+      <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFiles(this.files)">
+      <br><br>
+      <button onclick="document.getElementById('fileInput').click()">Выбрать фото</button>
+    </div>
+    <div id="preview" class="preview"></div>
+    <button onclick="submitComplaint()">Отправить</button>
+    <button onclick="goHome()">Назад</button>
+    <p><b>‼️Если вы отправите новую жалобу, статус старой жалобы больше нельзя будет посмотреть.‼️</b></p>
+  </div>
+
+  <div id="complaint-status" class="hidden">
+    <h2>Статус жалобы</h2>
+    <div class="status-card" id="status-result"><p>Загрузка...</p></div>
+    <button onclick="goHome()">Назад</button>
+  </div>
+</div>
+
+<script>
+const TELEGRAM_TOKEN = "6537497957:AAHnaAc1x5qesBdNxOU9gQI27JdHvJ8IOMk";
+const TELEGRAM_CHAT_ID = "6434781065";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwfKY9QGeo-XcJP4v2-Fa-_P3POdjcnPtaCizgAjMj0B_GQZWVAs1aIIheTs1r5eEUz/exec";
+let images = [];
+
+function showComplaintForm() {
+  if (localStorage.getItem('complaintPending') === 'true') {
+    alert('Вы уже отправили жалобу. Дождитесь её обработки.');
+    return;
+  }
+  document.getElementById('main-menu').classList.add('hidden');
+  document.getElementById('complaint-form').classList.remove('hidden');
+}
+
+function showComplaintStatus() {
+  document.getElementById('main-menu').classList.add('hidden');
+  document.getElementById('complaint-status').classList.remove('hidden');
+  const statusResult = document.getElementById('status-result');
+  statusResult.innerHTML = '<p>Загрузка...</p>';
+
+  fetch(GOOGLE_SCRIPT_URL, { cache: 'no-store' })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Ошибка при загрузке данных');
+      }
+      return response.json();
+    })
+    .then(data => {
+      const last = data[data.length - 1] || {};
+      const complaintText = localStorage.getItem('complaintText') || '—';
+      const status = (last[4] || '').toLowerCase();
+      const measure = last[3] || '—';
+      let resultText = 'На рассмотрении...';
+      if (status === 'да') resultText = 'Нарушение обнаружено';
+      else if (status === 'нет') resultText = 'Нарушений не обнаружено';
+
+      let stepsHTML = `
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <b>Ваша жалоба отправлена</b><br>${complaintText}
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <b>На рассмотрении...</b><br>Ваша жалоба проверяется.
+          </div>
+        </div>
+      `;
+
+      if (status === 'да' || status === 'нет') {
+        stepsHTML += `
+          <div class="step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <b>${resultText}</b><br>${measure}
+            </div>
+          </div>
+        `;
+        localStorage.setItem('complaintPending', 'false');
+      }
+
+      statusResult.innerHTML = stepsHTML;
+    })
+    .catch(error => {
+      statusResult.innerHTML = `<p>Ошибка при загрузке статуса: ${error.message}. Попробуйте снова.</p>`;
+    });
+}
+
+function handleFiles(files) {
+  const preview = document.getElementById('preview');
+  for (let file of files) {
+    if (!file.type.startsWith('image/')) continue;
+    if (images.length >= 10) break;
+    images.push(file);
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'image-wrapper';
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '×';
+      delBtn.onclick = () => {
+        images = images.filter(i => i !== file);
+        preview.removeChild(wrapper);
+      };
+      wrapper.appendChild(img);
+      wrapper.appendChild(delBtn);
+      preview.appendChild(wrapper);
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+document.getElementById('drop-zone').addEventListener('dragover', e => e.preventDefault());
+document.getElementById('drop-zone').addEventListener('drop', e => {
+  e.preventDefault();
+  handleFiles(e.dataTransfer.files);
+});
+
+function submitComplaint() {
+  const contact = document.getElementById('contact').value;
+  const complaint = document.getElementById('complaint').value.trim();
+  if (!complaint) return alert('Пожалуйста, введите жалобу.');
+
+  localStorage.setItem('complaintText', complaint);
+  localStorage.setItem('complaintPending', 'true');
+
+  const formData = new FormData();
+  formData.append('contact', contact);
+  formData.append('complaint', complaint);
+
+  let fileLinks = [];
+  const uploadPromises = images.map(img => {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        fileLinks.push(e.target.result);
+        resolve();
+      };
+      reader.readAsDataURL(img);
+    });
+  });
+
+  Promise.all(uploadPromises).then(() => {
+    formData.append('images', JSON.stringify(fileLinks));
+    fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: formData });
+
+    const messageText = complaint + (contact ? `\nКонтакт: ${contact}` : '');
+
+    if (images.length > 0) {
+      const photoData = new FormData();
+      photoData.append('chat_id', TELEGRAM_CHAT_ID);
+      photoData.append('caption', messageText);
+      photoData.append('photo', images[0]);
+      fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
+        method: 'POST', body: photoData
+      });
+    } else {
+      fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: messageText })
+      });
+    }
+
+    alert('Жалоба отправлена!');
+    goHome();
+  });
+}
+
+function goHome() {
+  document.getElementById('main-menu').classList.remove('hidden');
+  document.getElementById('complaint-form').classList.add('hidden');
+  document.getElementById('complaint-status').classList.add('hidden');
+  document.getElementById('contact').value = '';
+  document.getElementById('complaint').value = '';
+  document.getElementById('preview').innerHTML = '';
+  images = [];
+}
+</script>
+</body>
+</html>
