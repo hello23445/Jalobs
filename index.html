@@ -125,14 +125,14 @@
     </div>
     <div id="preview" class="preview"></div>
     <button onclick="submitComplaint()">Отправить</button>
-    <button onclick="goHome()">Назад</button>
+    <button class="back-button" onclick="goHome()" ontouchend="goHome()">Назад</button>
     <p><b>‼️Если вы отправите новую жалобу, статус старой жалобы больше нельзя будет посмотреть.‼️</b></p>
   </div>
 
   <div id="complaint-status" class="hidden">
     <h2>Статус жалобы</h2>
     <div class="status-card" id="status-result"><p>Загрузка...</p></div>
-    <button onclick="goHome()">Назад</button>
+    <button class="back-button" onclick="goHome()" ontouchend="goHome()">Назад</button>
   </div>
 </div>
 
@@ -295,9 +295,7 @@ function submitComplaint() {
   });
 }
 
-禁止
-
-System: function goHome() {
+function goHome() {
   document.getElementById('main-menu').classList.remove('hidden');
   document.getElementById('complaint-form').classList.add('hidden');
   document.getElementById('complaint-status').classList.add('hidden');
@@ -306,6 +304,14 @@ System: function goHome() {
   document.getElementById('preview').innerHTML = '';
   images = [];
 }
+
+// Скрытие клавиатуры при клике по пустому месту
+document.body.addEventListener('click', (e) => {
+  const target = e.target;
+  if (!target.closest('input, textarea, button, .drop-zone, .image-wrapper')) {
+    document.activeElement.blur();
+  }
+});
 </script>
 </body>
 </html>
