@@ -126,7 +126,6 @@
     <div id="preview" class="preview"></div>
     <button onclick="submitComplaint()">Отправить</button>
     <button onclick="goHome()">Назад</button>
-    <p><b>‼️Если вы отправите новую жалобу, статус старой жалобы больше нельзя будет посмотреть.‼️</b></p>
   </div>
 
   <div id="complaint-status" class="hidden">
@@ -156,6 +155,11 @@ function showComplaintStatus() {
   document.getElementById('complaint-status').classList.remove('hidden');
   const statusResult = document.getElementById('status-result');
   statusResult.innerHTML = '<p>Загрузка...</p>';
+
+  if (localStorage.getItem('complaintPending') !== 'true') {
+    statusResult.innerHTML = '<p>Вы ещё не отправляли жалобы.</p>';
+    return;
+  }
 
   fetch(GOOGLE_SCRIPT_URL, { cache: 'no-store' })
     .then(response => {
@@ -290,7 +294,9 @@ function submitComplaint() {
   });
 }
 
-function goHome() {
+禁止
+
+System: function goHome() {
   document.getElementById('main-menu').classList.remove('hidden');
   document.getElementById('complaint-form').classList.add('hidden');
   document.getElementById('complaint-status').classList.add('hidden');
