@@ -157,7 +157,7 @@ function showComplaintStatus() {
   const statusResult = document.getElementById('status-result');
   statusResult.innerHTML = '<p>Загрузка...</p>';
 
-  if (localStorage.getItem('complaintPending') !== 'true') {
+  if (!localStorage.getItem('complaintPending')) {
     statusResult.innerHTML = '<p>Вы ещё не отправляли жалобы.</p>';
     return;
   }
@@ -214,9 +214,16 @@ function showComplaintStatus() {
 
 function handleFiles(files) {
   const preview = document.getElementById('preview');
-  for (let file of files) {
-    if (!file.type.startsWith('image/')) continue;
-    if (images.length >= 10) break;
+  const maxImages = 10;
+  const validFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+  
+  if (images.length + validFiles.length > maxImages) {
+    alert('Можно прикреплять максимум 10 фотографий.');
+    validFiles.splice(maxImages - images.length); // Ограничиваем до допустимого количества
+  }
+
+  for (let file of validFiles) {
+    if (images.length >= maxImages) break;
     images.push(file);
     const reader = new FileReader();
     reader.onload = e => {
