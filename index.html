@@ -255,11 +255,16 @@ function submitComplaint() {
   const contact = document.getElementById('contact').value;
   const complaint = document.getElementById('complaint').value.trim();
   if (!complaint) {
-  alert('Пожалуйста, введите жалобу.');
-  document.getElementById('complaint').style.background = 'red';
-  document.getElementById('complaint').style.color = 'white';
-  prompt('Пожалуйста, введите жалобу.');
-  return;
+    document.getElementById('complaint').style.background = 'red';
+    document.getElementById('complaint').style.color = 'white';
+    setTimeout(() => {
+      alert('Пожалуйста, введите жалобу.\nВведите жалобу в красном поле "Опишите жалобу".');
+    }, 0.5);
+    return;
+}
+else{
+  document.getElementById('complaint').style.background = 'white';
+  document.getElementById('complaint').style.color = 'black';
 }
 
 
@@ -305,6 +310,8 @@ function submitComplaint() {
     }
 
     alert('Жалоба отправлена!');
+    document.getElementById('complaint').style.background = 'white';
+    document.getElementById('complaint').style.color = 'black';
     goHome();
   });
 }
@@ -316,6 +323,8 @@ function goHome() {
   document.getElementById('contact').value = '';
   document.getElementById('complaint').value = '';
   document.getElementById('preview').innerHTML = '';
+  document.getElementById('complaint').style.background = 'white';
+  document.getElementById('complaint').style.color = 'black';
   images = [];
 }
 
