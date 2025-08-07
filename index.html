@@ -254,7 +254,14 @@ document.getElementById('drop-zone').addEventListener('drop', e => {
 function submitComplaint() {
   const contact = document.getElementById('contact').value;
   const complaint = document.getElementById('complaint').value.trim();
-  if (!complaint) return alert('Пожалуйста, введите жалобу.');
+  if (!complaint) {
+  alert('Пожалуйста, введите жалобу.');
+  document.getElementById('complaint').style.background = 'red';
+  document.getElementById('complaint').style.color = 'white';
+  prompt('Пожалуйста, введите жалобу.');
+  return;
+}
+
 
   localStorage.setItem('complaintText', complaint);
   localStorage.setItem('complaintPending', 'true');
